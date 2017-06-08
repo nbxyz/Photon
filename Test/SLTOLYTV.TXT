@@ -1,0 +1,11 @@
+y2017m6d4h20m18s56 Attached SD card. 
+y2017m6d4h20m19s2 Opening data file: D0604h20
+y2017m6d4h20m19s6 Ejecting SD.
+y2017m6d4h20m19s6 Goodbye!
+y2017m6d4h20m19s51 Attached SD card. 
+y2017m6d4h20m19s58 Opening data file: D0604h20
+y2017m6d4h20m20s4 Ejecting SD.
+y2017m6d4h20m20s4 Goodbye!
+y2017m6d4h20m20s10 Attached SD card. 
+y2017m6d4h20m20s15 Ejecting SD.
+y2017m6d4h20m20s15 Goodbye!

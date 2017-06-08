@@ -1,0 +1,9 @@
+y2017m6d4h9m55s12 Attached SD card. 
+y2017m6d4h9m55s24 Opening data file: D17055053h055.txt
+y2017m6d4h9m55s24 Failed to open datafile, D17055053h055.txt (6) The path name format is invalid
+y2017m6d4h9m55s27 Opening data file: D17055053h055.txt
+y2017m6d4h9m55s27 Failed to open datafile, D17055053h055.txt (6) The path name format is invalid
+y2017m6d4h9m56s1 Goodbye!
+y2017m6d4h9m56s6 Attached SD card. 
+y2017m6d4h9m56s9 Ejecting SD.
+y2017m6d4h9m56s9 Goodbye!

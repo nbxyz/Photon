@@ -1,0 +1,17 @@
+Hello, World!Index: 792. Light: 792.
+Index: 795. Light: 795.
+Index: 799. Light: 799.
+Index: 797. Light: 797.
+Index: 793. Light: 793.
+Index: 797. Light: 797.
+Index: 797. Light: 797.
+Index: 789. Light: 789.
+Index: 790. Light: 790.
+Index: 789. Light: 789.
+Index: 789. Light: 789.
+Index: 789. Light: 789.
+Hello, World!Index: 790. Light: 790.
+Index: 788. Light: 788.
+Index: 785. Light: 785.
+Index: 787. Light: 787.
+Index: 789. Light: 789.
