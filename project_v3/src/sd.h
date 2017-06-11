@@ -80,45 +80,60 @@ private:
   int error(FRESULT result, String *output);
   FRESULT SDresult, FILEresult;
   String checkFilename(String filename);
+  int troubleShootSD();
 
   // SD
 
+  int checkSD();
   FatFsSD FatSD;
   int sdAttached, SD_CS;
   String sdMessage;
 
-  // Master & Session Log
+  // Master Log
 
+  int checkMasterfile();
+  int openMasterfile();
+  int closeMasterfile();
+  int writeMaster();
+  FIL masterFile;
+  int masterOpen;
+  String masterMessage;
+
+
+  // Session Log
+
+  int checkLogFile();
   int openLogFile();
   int closeLogFile();
   int writeLog(String input);
-  FIL masterFile, logFile;
-  int masterOpen, logOpen, sessionStarted;
-  String session;
-  String masterMessage, sessionMessage;
+  FIL logFile;
+  int logOpen;
+  String session, sessionMessage, sessionFilename;
 
   // Data ID
 
+  int checkIDFile();
   int openIDFile();
   int closeIDFile();
   int writeIDFile();
   int loadIDFile(); // Loads the saved ID file into memory
   FIL IDFile;
   int idOpen, currentID, newEntries;
-  String idMessage;
+  String idMessage, idFilename;
 
   unsigned int dataID[256]; // Beginning ID
   String dataFileNames[256]; // Data name (could be reduced to char [8]?)
 
   // Data File
 
-  String dataFilename();
+  String getDataFilename();
+  int checkDataFile();
   int openDataFile();
   int updateDataFile();
   int closeDataFile();
   FIL dataFile;
   int dataOpen, newHour, currentHour;
-  String dataMessage;
+  String dataMessage, dataFilename;
 
 };
 

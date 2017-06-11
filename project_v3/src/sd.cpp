@@ -22,7 +22,6 @@ SD::SD() {
   newEntries = 0;
 
   // Set all initial messages.
-
   message = "Hello, world!";
   moduleMessage = String("SD module not setup.");
   sdMessage = String("No SD attached.");
@@ -32,7 +31,6 @@ SD::SD() {
   idMessage = String("ID not initialized.");
 
   // Publish cloud function.
-
   Particle.function("SD_Input", &SD::SDCloudInput, this);
   Particle.variable("SD_Output", message);
 
@@ -67,9 +65,10 @@ int SD::setup(int _SD_CS, int redPin, int greenPin, int bluePin, int button) {
 
   rgb.setup(redPin,greenPin,bluePin,DIGITAL);
   rgb.yellow(); // Background color = Yellow (No SD attached)
+  rgb.save();
   // Buttom
 
-  rgb.tmpBlue(500); // Temp working color.
+  // rgb.tmpBlue(500); // Temp working color.
 
   SD_CS = _SD_CS;
   FatSD.begin(SPI,SD_CS);
@@ -77,6 +76,7 @@ int SD::setup(int _SD_CS, int redPin, int greenPin, int bluePin, int button) {
   digitalWrite(SD_CS,LOW); // No card attached yet.
 
   return success();
+
 } // The setup
 
 int SD::update() {
@@ -112,6 +112,7 @@ int SD::attach() {
   if(openLogFile()) writeLog("Attached SD card.");
 
   rgb.cyan(); // Set cyan as an indication of attached SD card.
+  rgb.save();
 
   return success();
 } // Attempt to attach the SD card
@@ -140,6 +141,9 @@ int SD::eject() {
 
   digitalWrite(SD_CS, LOW);
 
+  rgb.yellow();
+  rgb.save();
+
   sdMessage = "SD Ejected!";
   sdAttached = false;
 
@@ -162,6 +166,9 @@ int SD::forceeject() {
   FatFs::detach(0);
 
   digitalWrite(SD_CS, LOW);
+
+  rgb.yellow();
+  rgb.save();
 
   sdMessage = "SD Forced to eject!";
   sdAttached = false;
@@ -286,12 +293,12 @@ String SD::SDCloudOutput() {
 // --- System ---
 
 int SD::write() {
-  if(writing) {
+  if(writing || working) {
     rgb.tmpPurple(200);
     return true;
   } else {
-    //rgb.save();
-    //rgb.white();
+    rgb.save();
+    rgb.white();
     rgb.tmpWhite(200);
     writing = true;
     return false;
@@ -299,21 +306,21 @@ int SD::write() {
 } // Attempt to write to a file.
 
 int SD::writesuccess() {
-  //rgb.load();
+  rgb.load();
   rgb.tmpGreen(100);
   writing = false;
   return true;
 } // Successfully write to file.
 
 int SD::writefail() {
-  //rgb.load();
+  rgb.load();
   rgb.tmpRed(100);
   writing = false;
   return false;
 } // Failed to write.
 
 int SD::work() {
-  if(working) {
+  if(working || writing) {
     rgb.tmpPurple(200);
     return true;
   } else {
@@ -404,19 +411,129 @@ int SD::error(FRESULT result, String *output) {
 } // Check the FRESULT and return the string.
 
 String SD::checkFilename(String filename) {
+
+  if(filename.length() > 8) {
+
+    String message = String(filename+" - Filename is too long.");
+    writeLog(message);
+
+    filename.remove(8); // Makes sure the filename is only 8 characters.
+
+  }
+
+  return filename;
+
+}
+
+// --- SD ---
+
+int SD::checkSD() {
+
+  if(sdAttached) return false;
+
+  if(attach()) return false;
+
+  else {
+    sdMessage = "SD is not attached, and couldn't attach";
+    return true;
+  }
+
+}
+
+// --- Master Session Log ---
+
+int SD::checkMasterfile() {
+  
+}
+
+int SD::openMasterFile() {
+
+}
+
+int SD::closeMasterFile() {
+
+}
+
+int SD::writeMasterFile() {
+
 }
 
 // Session Log
 
+int SD::checkLogFile() {
+
+  if(logOpen) return false;
+
+  else if(openLogFile()) return false;
+
+  else {
+    sessionMessage = "Log is not open and couldn't open.";
+    return true;
+  }
+
+}
+
 int SD::openLogFile() {
+
+  if(checkSD()) return false;
+
+  if(logOpen) {
+    sessionMessage = "Log already open.";
+    return false;
+  }
+
+  update();
+
+  sessionFilename = String(session);
+
+  sessionFilename = checkFilename(sessionFilename);
+
+  sessionFilename = String(sessionFilename+".txt");
+
+  FILEresult = f_open(&logFile, sessionFilename, FA_OPEN_APPEND | FA_WRITE | FA_READ);
+
+  if(error(FILEresult, &sessionMessage)) return false;
+
+  logOpen = true;
+
+  writeLog("Hello!");
+
+  return true;
 
 }
 
 int SD::closeLogFile() {
 
+  if(checkSD()) return false;
+
+  if(checkLogFile()) return false;
+
+  writeLog("Goodbye!");
+
+  FILEresult = f_close(&logFile);
+
+  if(error(FILEresult, &sessionMessage)) return false;
+
+  logOpen = false;
+
+  return true;
+
 }
 
 int SD::writeLog(String input) {
+
+  if(checkSD()) return false;
+
+  if(checkLogFile()) return false;
+
+  update();
+
+  if(!f_puts(String(prettyTimestamp+" "+input+"\n"), &logFile)) {
+    sessionMessage = "Error writing to log...";
+    return false;
+  }
+
+  return true;
 
 }
 
@@ -440,7 +557,7 @@ int SD::loadIDFile() {
 
 // --- Data File ---
 
-String SD::dataFilename() {
+String SD::getDataFilename() {
 
   return String("D"+timestamp.substring(3,10));
 

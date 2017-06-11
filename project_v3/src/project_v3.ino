@@ -41,23 +41,16 @@ void loop() {
 
   //message = "Hello, other world!";
 
-  /*
-
   if(millis() > writeTime) {
 
     writeTime += 4000;
-
     light = analogRead(A0);
-
     String data = String(dataID+","+timestamp+","+light);
-
     sd.writeData(data);
 
     dataID++;
 
   }
-
-  */
 
   sd.update();
 

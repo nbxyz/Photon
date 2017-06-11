@@ -40,8 +40,8 @@ class RGBled {
     int tmpColor(int r, int g, int b, int millis);
     int color(int r, int g, int b);
 
-    int save();
-    int load();
+    void save();
+    void load();
 
     // Premade Colors
     int red();
@@ -68,6 +68,7 @@ class RGBled {
 
     int R, G, B;
     int tmpR, tmpG, tmpB;
+    int savedR, savedG, savedB;
 
     ledMode mode;
 

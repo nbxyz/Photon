@@ -30,6 +30,12 @@ RGBled::RGBled() {
   Particle.variable("Green", G);
   Particle.variable("Blue", B);
 
+  Particle.variable("SavedRed", savedR);
+  Particle.variable("SavedGreen", savedG);
+  Particle.variable("SavedBlue", savedB);
+
+  R, G, B, tmpR, tmpG, tmpB = 0;
+
 }
 
 int RGBled::setup(int redPin, int greenPin, int bluePin, ledMode _mode) {
@@ -109,19 +115,19 @@ int RGBled::swapColor() {
 
 }
 
-int RGBled::save() {
+void RGBled::save() {
 
-  tmpR = R;
-  tmpG = G;
-  tmpB = B;
+  savedR = R;
+  savedG = G;
+  savedB = B;
 
 }
 
-int RGBled::load() {
+void RGBled::load() {
 
-  R = tmpR;
-  G = tmpG;
-  B = tmpB;
+  R = savedR;
+  G = savedG;
+  B = savedB;
 
 }
 

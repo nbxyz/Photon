@@ -187,6 +187,8 @@ int SD::error() {
 
 int SD::openLog() {
 
+  if(!sdAttached) if(!attach()) return false;
+
   if(logOpen) {
     FILEstatus = "Log already open.";
     return false;
@@ -194,16 +196,15 @@ int SD::openLog() {
 
   update();
 
-  logFilename = String(session);
+  sessionFilename = String(session);
 
-  logFilename = checkFilename(logFilename);
+  sessionFilename = checkFilename(sessionFilename);
 
-  logFilename = String(logFilename+".txt");
+  sessionFilename = String(logFilename+".txt");
 
-  FILEresult = f_open(&logFile, logFilename, FA_OPEN_APPEND | FA_WRITE | FA_READ);
+  FILEresult = f_open(&logFile, sessionFilename, FA_OPEN_APPEND | FA_WRITE | FA_READ);
 
-  if(error()) {
-    FILEstatus = String(logFilename+" "+FILEstatus);
+  if(error(FILEresult, &sessionMessage)) {
     return false;
   }
 
