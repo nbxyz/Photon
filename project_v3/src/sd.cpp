@@ -2,33 +2,26 @@
 #include "FatFs.h"
 #include "sd.h"
 #include "rgb.h"
+#include "data.h"
 
 SD::SD() {
 
+  // Set working
   working = true;
 
   // Set all variables.
-
-  updateTime();
-
-  dataOpen = false;
-  currentHour = false;
-  newHour = false;
-  logOpen = false;
-  idOpen = false;
   sdAttached = false;
-  sessionStarted = false;
-  currentID = false;
-  newEntries = 0;
+  sessionOpen = false;
+  idOpen = false;
+  latestID = false;
 
   // Set all initial messages.
   message = "Hello, world!";
-  moduleMessage = String("SD module not setup.");
-  sdMessage = String("No SD attached.");
-  masterMessage = String("Master not inialized, waiting for SD card.");
-  sessionMessage = String("Session not started, waiting for SD card.");
-  dataMessage = String("Data not initialized.");
-  idMessage = String("ID not initialized.");
+  moduleMessage = "SD module not setup.";
+  sdMessage = "No SD attached.";
+  sessionMessage = "Session started, waiting for SD card.";
+  idMessage = "ID not initialized.";
+  dataMessage = "Data not initialized.";
 
   // Publish cloud function.
   Particle.function("SD_Input", &SD::SDCloudInput, this);
@@ -40,18 +33,14 @@ SD::SD() {
   session = String("S");
 
   for(int i = 0; i < 7; i++) {
-
     //char c = random(97,123); // Lowercase
     char c = random(65,91); // Uppercase
-
     session.concat(c);
-
   }
 
   // Start the session
   updateTime();
   startTimestamp = timestamp;
-
   working = false;
 
 }
@@ -61,21 +50,22 @@ SD::SD() {
 int SD::setup(int _SD_CS, int redPin, int greenPin, int bluePin, int button) {
   // Setup the module
 
-  if(work()) return false;
-
+  // Setup RGB
   rgb.setup(redPin,greenPin,bluePin,DIGITAL);
   rgb.yellow(); // Background color = Yellow (No SD attached)
   rgb.save();
-  // Buttom
 
-  // rgb.tmpBlue(500); // Temp working color.
+  // Setup Buttom
+  //btn.setup(btnPin);
+
+  if(work()) return false;
 
   SD_CS = _SD_CS;
   FatSD.begin(SPI,SD_CS);
   FatSD.highSpeedClock(50000000);
   digitalWrite(SD_CS,LOW); // No card attached yet.
 
-  return success();
+  return worksuccess();
 
 } // The setup
 
@@ -83,10 +73,26 @@ int SD::update() {
 
   rgb.display();
 
+  //control(&btn);
+
   return true;
+
 } // Update User Interface (RGB & Button)
 
 // --- SD ---
+
+int SD::checkSD() {
+
+  if(sdAttached) return false;
+
+  if(attach()) return false;
+
+  else {
+    sdMessage = "SD is not attached, and couldn't attach";
+    return true;
+  }
+
+}
 
 int SD::attach() {
 
@@ -94,7 +100,7 @@ int SD::attach() {
 
   if(sdAttached) {
     sdMessage = "SD already attached.";
-    return fail();
+    return workfail();
   }
 
   digitalWrite(SD_CS,HIGH);
@@ -103,18 +109,20 @@ int SD::attach() {
 
   if(error(SDresult, &sdMessage)) {
     digitalWrite(SD_CS,LOW);
-    return fail();
+    return workfail();
   }
 
   sdMessage = "SD Attached!";
   sdAttached = true;
 
-  if(openLogFile()) writeLog("Attached SD card.");
+  if(openSessionFile()) writeSession("Attached SD card.");
+
+  if(loadIDFile());
 
   rgb.cyan(); // Set cyan as an indication of attached SD card.
   rgb.save();
 
-  return success();
+  return worksuccess();
 } // Attempt to attach the SD card
 
 int SD::eject() {
@@ -123,19 +131,21 @@ int SD::eject() {
 
   if(!sdAttached) {
     sdMessage = "No SD attached to eject.";
-    return fail();
+    return workfail();
   }
 
-  if(dataOpen) closeDataFile();
+  if(error(FILEresult,&dataMessage)) return workfail();
 
-  if(error(FILEresult,&dataMessage)) return fail();
+  if(idOpen) closeIDFile();
 
-  if(logOpen) {
-    writeLog("Ejecting SD.");
-    closeLogFile();
+  if(error(FILEresult,&idMessage)) return workfail();
+
+  if(sessionOpen) {
+    writeSession("Ejecting SD.");
+    closeSessionFile();
   }
 
-  if(error(FILEresult,&sessionMessage)) return fail();
+  if(error(FILEresult,&sessionMessage)) return workfail();
 
   FatFs::detach(0);
 
@@ -147,18 +157,20 @@ int SD::eject() {
   sdMessage = "SD Ejected!";
   sdAttached = false;
 
-  return success();
+  return worksuccess();
 } // Attempt to eject attached SD card
 
 int SD::forceeject() {
 
-  if(dataOpen) closeDataFile();
-
   if(error(FILEresult, &dataMessage));
 
-  if(logOpen) {
-    writeLog("Ejecting SD with the Force.");
-    closeLogFile();
+  if(idOpen) closeIDFile();
+
+  if(error(FILEresult, &idMessage));
+
+  if(sessionOpen) {
+    writeSession("Ejecting SD with the Force.");
+    closeSessionFile();
   }
 
   if(error(FILEresult, &sessionMessage));
@@ -173,54 +185,16 @@ int SD::forceeject() {
   sdMessage = "SD Forced to eject!";
   sdAttached = false;
 
-  return success();
+  return worksuccess();
 } // Force eject
-
-// --- Public Data Manipulation ---
-
-String SD::getData(unsigned int dataID) {
-
-} // Get a piece of data
-String SD::deleteData(unsigned int dataID) {
-
-} // Delete selected data
-int SD::modifyData(unsigned int dataID, String data) {
-
-} // Modify selected data
-int SD::writeData(String data) {
-  if(write()) return writefail();
-
-  if(!sdAttached) {
-    dataMessage = "No SD attached.";
-    return writefail();
-  }
-
-  if(!dataOpen) {
-    dataMessage = "Data file not open.";
-    return writefail();
-  }
-
-  updateTime(); // Update time.
-
-  updateDataFile(); // Check to update the data file.
-
-  // Write a new piece of data.
-  if(!f_puts(data, &dataFile)) {
-    dataMessage = "Couldn't write to data file.";
-    return writefail();
-  }
-
-  return writesuccess();
-} // Write data
 
 // --- Status ---
 
 String SD::getSDModuleStatus() {return moduleMessage;} // Get the module status
 String SD::getSDCardStatus() {return sdMessage;} // Get the SD card status
-String SD::getMasterFileStatus() {return masterMessage;} // Get the Master Session File status
-String SD::getLogFileStatus() {return sessionMessage;} // Get the Log file status
-String SD::getIDFileStatus() {return idMessage;} // Get the ID file status
-String SD::getDataFileStatus() {return dataMessage;} // Get the SD card status
+String SD::getSessionStatus() {return sessionMessage;} // Get the Log file status
+String SD::getIDStatus() {return idMessage;} // Get the ID file status
+String SD::getDataStatus() {return dataMessage;} // Get the SD card status
 String SD::getTimestamp() {return timestamp;} // Get the lastest timestamp
 
 // --- Cloud ---
@@ -244,10 +218,9 @@ int SD::SDCloudInput(String command) {
 
     if(parameter == "module") message = getSDModuleStatus();
     else if(parameter == "sd") message = getSDCardStatus();
-    else if(parameter == "master") message = getMasterFileStatus();
-    else if(parameter == "session") message = getLogFileStatus();
-    else if(parameter == "dataid") message = getIDFileStatus();
-    else if(parameter == "data") message = getDataFileStatus();
+    else if(parameter == "session") message = getSessionStatus();
+    else if(parameter == "dataid") message = getIDStatus();
+    else if(parameter == "data") message = getDataStatus();
     else if(parameter == "time" || parameter == "timestamp") {
       updateTime();
       message = prettyTimestamp;
@@ -259,10 +232,6 @@ int SD::SDCloudInput(String command) {
     return true;
   }
 
-  //else if(command == "start") return start();
-
-  //else if(command == "stop") return stop();
-
   else if(command == "attach") return attach();
 
   else if(command == "eject") return eject();
@@ -270,39 +239,36 @@ int SD::SDCloudInput(String command) {
   else if(command == "forceeject") return forceeject();
 
   else if(command == "getdata") {
-    int id = parameter.toInt();
+    unsigned int id = parameter.toInt();
     if(!id) {
       message = String("Couldn't find the specified data at "+parameter+", "+id);
       return false;
     }
-    message = getData(id);
+
+    //message = getData(id);
     return true;
+
   }
 
-  else if(command == "writedata") writeData(parameter);
+  else if(command == "writesession") writeSession(parameter);
 
   else message = "Didn't understand command.";
 
   return false;
-} // Cloud CLI
 
-String SD::SDCloudOutput() {
-  return message;
-} // Return message
+} // Cloud CLI
 
 // --- System ---
 
 int SD::write() {
-  if(writing || working) {
+  if(working) {
     rgb.tmpPurple(200);
-    return true;
-  } else {
-    rgb.save();
-    rgb.white();
-    rgb.tmpWhite(200);
-    writing = true;
     return false;
   }
+  rgb.save();
+  rgb.white();
+  rgb.tmpWhite(200);
+  return true;
 } // Attempt to write to a file.
 
 int SD::writesuccess() {
@@ -315,12 +281,11 @@ int SD::writesuccess() {
 int SD::writefail() {
   rgb.load();
   rgb.tmpRed(100);
-  writing = false;
   return false;
 } // Failed to write.
 
 int SD::work() {
-  if(working || writing) {
+  if(working) {
     rgb.tmpPurple(200);
     return true;
   } else {
@@ -332,14 +297,14 @@ int SD::work() {
   }
 } // Test for working, allows working or not.
 
-int SD::success() {
+int SD::worksuccess() {
   rgb.load();
   rgb.tmpGreen(200);
   working = false;
   return true;
 } // Succeeded!
 
-int SD::fail() {
+int SD::workfail() {
   rgb.load();
   rgb.tmpRed(200);
   working = false;
@@ -349,7 +314,6 @@ int SD::fail() {
 String SD::updateTime() {
 
   // Get new time
-
   time[0] = Time.year();
   time[1] = Time.month();
   time[2] = Time.day();
@@ -405,6 +369,8 @@ int SD::error(FRESULT result, String *output) {
 
     *output = FatFs::fileResultMessage(result);
 
+    if(sessionOpen) writeSession(*output);
+
     return true;
 
   } else return false;
@@ -414,8 +380,8 @@ String SD::checkFilename(String filename) {
 
   if(filename.length() > 8) {
 
-    String message = String(filename+" - Filename is too long.");
-    writeLog(message);
+    String fileError = String(filename+" - Filename is too long.");
+    if(sessionOpen) writeSession(fileError);
 
     filename.remove(8); // Makes sure the filename is only 8 characters.
 
@@ -425,46 +391,13 @@ String SD::checkFilename(String filename) {
 
 }
 
-// --- SD ---
-
-int SD::checkSD() {
-
-  if(sdAttached) return false;
-
-  if(attach()) return false;
-
-  else {
-    sdMessage = "SD is not attached, and couldn't attach";
-    return true;
-  }
-
-}
-
-// --- Master Session Log ---
-
-int SD::checkMasterfile() {
-  
-}
-
-int SD::openMasterFile() {
-
-}
-
-int SD::closeMasterFile() {
-
-}
-
-int SD::writeMasterFile() {
-
-}
-
 // Session Log
 
-int SD::checkLogFile() {
+int SD::checkSessionFile() {
 
-  if(logOpen) return false;
+  if(sessionOpen) return false;
 
-  else if(openLogFile()) return false;
+  else if(openSessionFile()) return false;
 
   else {
     sessionMessage = "Log is not open and couldn't open.";
@@ -473,62 +406,58 @@ int SD::checkLogFile() {
 
 }
 
-int SD::openLogFile() {
+int SD::openSessionFile() {
 
   if(checkSD()) return false;
 
-  if(logOpen) {
+  if(sessionOpen) {
     sessionMessage = "Log already open.";
     return false;
   }
 
-  update();
+  updateTime();
 
   sessionFilename = String(session);
-
   sessionFilename = checkFilename(sessionFilename);
-
   sessionFilename = String(sessionFilename+".txt");
 
-  FILEresult = f_open(&logFile, sessionFilename, FA_OPEN_APPEND | FA_WRITE | FA_READ);
+  FILEresult = f_open(&sessionFile, sessionFilename, FA_OPEN_APPEND | FA_WRITE | FA_READ);
 
   if(error(FILEresult, &sessionMessage)) return false;
 
-  logOpen = true;
+  sessionOpen = true;
 
-  writeLog("Hello!");
+  writeSession("Hello!");
 
   return true;
 
 }
 
-int SD::closeLogFile() {
+int SD::closeSessionFile() {
 
   if(checkSD()) return false;
+  if(checkSessionFile()) return false;
 
-  if(checkLogFile()) return false;
+  writeSession("Goodbye!");
 
-  writeLog("Goodbye!");
-
-  FILEresult = f_close(&logFile);
+  FILEresult = f_close(&sessionFile);
 
   if(error(FILEresult, &sessionMessage)) return false;
 
-  logOpen = false;
+  sessionOpen = false;
 
   return true;
 
 }
 
-int SD::writeLog(String input) {
+int SD::writeSession(String input) {
 
   if(checkSD()) return false;
+  if(checkSessionFile()) return false;
 
-  if(checkLogFile()) return false;
+  updateTime();
 
-  update();
-
-  if(!f_puts(String(prettyTimestamp+" "+input+"\n"), &logFile)) {
+  if(!f_puts(String(prettyTimestamp+" "+input+"\n"), &sessionFile)) {
     sessionMessage = "Error writing to log...";
     return false;
   }
@@ -539,54 +468,132 @@ int SD::writeLog(String input) {
 
 // Data ID
 
+int SD::checkIDFile() {
+
+  if(idOpen) return false;
+  else if(openIDFile()) return false;
+  else {
+    idMessage = "ID is not open and couldn't open.";
+    if(sessionOpen) writeSession(idMessage);
+    return true;
+  }
+
+}
+
 int SD::openIDFile() {
+
+  if(checkSD()) return false;
+
+  if(idOpen) {
+    idMessage = "Trying to open IDFile, already open.";
+    if(sessionOpen) writeSession(idMessage);
+    return false;
+  }
+
+  FILEresult = f_open(&IDFile, "IDFILE", FA_OPEN_APPEND | FA_WRITE | FA_READ);
+
+  if(error(FILEresult, &idMessage)) return false;
+
+  idOpen = true;
+
+  writeSession("ID file opened.");
+
+  return true;
 
 }
 
 int SD::closeIDFile() {
 
+  if(checkSD()) return false;
+
+  if(checkIDFile()) return false;
+
+  if(sessionOpen) writeSession("Closing ID file.");
+
+  FILEresult = f_close(&IDFile);
+
+  if(error(FILEresult, &idMessage)) return false;
+
+  idOpen = false;
+
+  return true;
+
 }
 
-int SD::writeIDFile() {
+int SD::writeID(unsigned int id, String datafile) {
+
+  if(checkSD()) return false;
+
+  if(checkIDFile()) return false;
+
+  if(!f_puts(String(id+","+datafile), &IDFile)) {
+    sessionMessage = "Error writing to ID...";
+    return false;
+  }
+
+  dataIDs[IDcount] = id;
+  dataFilenames[IDcount] = datafile;
+
+  IDcount++;
+
+  closeIDFile();
+
+  return true;
 
 }
 
 int SD::loadIDFile() {
-  // Loads the saved ID file into memory
+  ///
 }
 
 // --- Data File ---
 
-String SD::getDataFilename() {
+int SD::writeData(Data data) {
 
-  return String("D"+timestamp.substring(3,10));
+  if(write()) return writefail();
 
-} // D+[YYY]YMMDDHH
-
-int SD::updateDataFile() {
-
-  currentHour = newHour;
-
-  newHour = time[3]; // Hour
-
-  if(newHour != currentHour) {
-    openDataFile();
-    dataMessage = "New hour!";
-    return true;
+  if(!checkSD()) {
+    dataMessage = "Trying to write data, no SD attached.";
+    if(sessionOpen) writeSession(dataMessage);
+    return writefail();
   }
 
-  else return false;
-
-} // Check if there is and hour change and need for a new datafile.
-
-int SD::openDataFile() {
-
   updateTime();
 
-}
+  latestID = data.id;
 
-int SD::closeDataFile() {
+  String tmpDataFilename = dataFilename;
 
-  updateTime();
+  dataFilename = String("D"+timestamp.substring(3,10));
+  dataFilename = checkFilename(dataFilename);
+  dataFilename = String(dataFilename+".txt");
 
-}
+  // Open datafile
+  FILEresult = f_open(&dataFile, dataFilename, FA_OPEN_APPEND | FA_WRITE | FA_READ);
+
+  if(error(FILEresult, &dataMessage)) return writefail();
+
+  String dataString = String(data.id+","+timestamp+","+data.data);
+
+  // Write a new piece of data.
+  if(!f_puts(dataString, &dataFile)) {
+    dataMessage = "Couldn't write to data file.";
+    return writefail();
+  }
+
+  // Write ID and DataFilename to ID file
+  if(tmpDataFilename != dataFilename) {
+
+    if(sessionOpen) writeSession("Opening new data file.");
+    writeID(latestID, dataFilename);
+
+  }
+
+  // Close datafile
+  FILEresult = f_close(&dataFile);
+
+  if(error(FILEresult, &dataMessage)) return writefail();
+
+  return writesuccess();
+
+} // Write data

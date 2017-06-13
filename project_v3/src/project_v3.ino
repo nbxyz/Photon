@@ -6,16 +6,17 @@
  */
 
 #include "sd.h"
+#include "data.h"
 
 SD sd;
 
 int light;
 
-long writeTime;
+long timekeeping;
 
-String timestamp = "timestamp";
+Data d;
 
-unsigned int dataID;
+unsigned int counter;
 
 // setup() runs once, when the device is first turned on.
 void setup() {
@@ -30,8 +31,9 @@ void setup() {
 
   Particle.variable("Light", light);
 
-  writeTime = 0;
-  dataID = 0;
+  timekeeping = millis();
+
+  counter = 0;
 
 }
 
@@ -39,16 +41,15 @@ void setup() {
 void loop() {
   // The core of your code will likely live here.
 
-  //message = "Hello, other world!";
+  if(timekeeping > millis()) {
 
-  if(millis() > writeTime) {
+    timekeeping =+ 4000;
 
-    writeTime += 4000;
-    light = analogRead(A0);
-    String data = String(dataID+","+timestamp+","+light);
-    sd.writeData(data);
+    d.id = counter;
+    d.timestamp = 0;
+    d.data = analogRead(A0);
 
-    dataID++;
+    sd.writeData(d);
 
   }
 

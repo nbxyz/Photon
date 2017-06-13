@@ -4,6 +4,7 @@
 #include "application.h"
 #include "FatFs.h"
 #include "rgb.h"
+#include "data.h"
 
 class SD {
 
@@ -24,54 +25,47 @@ public:
 
   // Data Manipulation
 
-  String getData(unsigned int dataID); // Get a piece of data
-  String deleteData(unsigned int dataID); // Delete selected data
-  int modifyData(unsigned int dataID, String data); // Modify selected data
-  int writeData(String data); // Write a new piece of data
-  unsigned int getLatestDataID();
+  String getData(unsigned int id); // Get a piece of data
+  int writeData(Data data); // Write a new piece of data
 
   // Status
 
   String getSDModuleStatus(); // Get the module status
   String getSDCardStatus(); // Get the SD card status
-  String getMasterFileStatus(); // Get the Log file status
-  String getLogFileStatus(); // Get the Log file status
-  String getIDFileStatus(); // Get the ID file status
-  String getDataFileStatus(); // Get Data file status
-  String getTimestamp(); // Get Data file status
+  String getSessionStatus(); // Get the session status
+  String getIDStatus(); // Get the ID status
+  String getDataStatus(); // Get the data status
+  String getTimestamp(); // Get the timestamp
 
   // Cloud
 
   int SDCloudInput(String command); // Published cloud commands
-  String SDCloudOutput();
-  String message;
 
 private:
 
   // I/O
 
   RGBled rgb;
-  // Button
+  // Button btn;
+  // void control(&btn);
 
   // Module
 
-  int write(); // Test for write access.
+  String message, moduleMessage;
+
+  int write(); // Test for write access (not working).
   int writesuccess();
   int writefail();
   int work(); // Test for working.
-  int success(); // Success.
-  int fail(); // Fail.
+  int worksuccess(); // Success.
+  int workfail(); // Fail.
+  int working, writing;
 
-  int working, writing, reading;
-  int time[6]; // year, month, day, hour, minute, second;
+  // Time
+
+  int time[6]; // year, month, day, hour, minute, second.
   String timestamp, prettyTimestamp, masterTimestamp, startTimestamp;
-  // YYYYMMDDHHMMSS
-  // YYYYMMDDHHMMSS
-  // YYYYMMDDHHMMSS
-  // YMMDDHH - Short time stamp
-
-  String moduleMessage;
-
+  // YYYYMMDDHHMMSS, YMMDDHH - Short time stamp
   String updateTime(); // Update time, return true if new data file is created, else false.
   String getPrettyTimestamp(String ts);
 
@@ -89,25 +83,14 @@ private:
   int sdAttached, SD_CS;
   String sdMessage;
 
-  // Master Log
-
-  int checkMasterfile();
-  int openMasterfile();
-  int closeMasterfile();
-  int writeMaster();
-  FIL masterFile;
-  int masterOpen;
-  String masterMessage;
-
-
   // Session Log
 
-  int checkLogFile();
-  int openLogFile();
-  int closeLogFile();
-  int writeLog(String input);
-  FIL logFile;
-  int logOpen;
+  int checkSessionFile();
+  int openSessionFile();
+  int closeSessionFile();
+  int writeSession(String log);
+  FIL sessionFile;
+  int sessionOpen, sessionStarted;
   String session, sessionMessage, sessionFilename;
 
   // Data ID
@@ -115,24 +98,20 @@ private:
   int checkIDFile();
   int openIDFile();
   int closeIDFile();
-  int writeIDFile();
+  int writeID(unsigned int id, String datafile);
   int loadIDFile(); // Loads the saved ID file into memory
   FIL IDFile;
-  int idOpen, currentID, newEntries;
+  int idOpen;
   String idMessage, idFilename;
 
-  unsigned int dataID[256]; // Beginning ID
-  String dataFileNames[256]; // Data name (could be reduced to char [8]?)
+  unsigned int latestID;
+  unsigned int dataIDs[256]; // Beginning ID
+  String dataFilenames[256]; // Data name (could be reduced to char [8]?
+  int IDcount = 0;
 
   // Data File
 
-  String getDataFilename();
-  int checkDataFile();
-  int openDataFile();
-  int updateDataFile();
-  int closeDataFile();
   FIL dataFile;
-  int dataOpen, newHour, currentHour;
   String dataMessage, dataFilename;
 
 };
