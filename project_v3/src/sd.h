@@ -95,9 +95,6 @@ private:
 
   // Data ID
 
-  int checkIDFile();
-  int openIDFile();
-  int closeIDFile();
   int writeID(unsigned int id, String datafile);
   int loadIDFile(); // Loads the saved ID file into memory
   FIL IDFile;

@@ -5,8 +5,7 @@
  * Date:
  */
 
-#include "sd.h"
-#include "data.h"
+data
 
 SD sd;
 
@@ -33,7 +32,7 @@ void setup() {
 
   timekeeping = millis();
 
-  counter = 0;
+  counter = 1;
 
 }
 
@@ -41,15 +40,18 @@ void setup() {
 void loop() {
   // The core of your code will likely live here.
 
-  if(timekeeping > millis()) {
 
-    timekeeping =+ 4000;
+  if(millis() > timekeeping) {
+
+    timekeeping += 4000;
 
     d.id = counter;
     d.timestamp = 0;
     d.data = analogRead(A0);
 
     sd.writeData(d);
+
+    counter++;
 
   }
 

@@ -3,8 +3,8 @@
 
 struct Data {
 
-  unsigned int id;
-  unsigned long timestamp;
+  int id;
+  long timestamp;
   int data;
 
 };

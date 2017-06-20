@@ -112,6 +112,8 @@ int SD::attach() {
     return workfail();
   }
 
+  worksuccess();
+
   sdMessage = "SD Attached!";
   sdAttached = true;
 
@@ -122,7 +124,8 @@ int SD::attach() {
   rgb.cyan(); // Set cyan as an indication of attached SD card.
   rgb.save();
 
-  return worksuccess();
+  return true;
+
 } // Attempt to attach the SD card
 
 int SD::eject() {
@@ -133,12 +136,6 @@ int SD::eject() {
     sdMessage = "No SD attached to eject.";
     return workfail();
   }
-
-  if(error(FILEresult,&dataMessage)) return workfail();
-
-  if(idOpen) closeIDFile();
-
-  if(error(FILEresult,&idMessage)) return workfail();
 
   if(sessionOpen) {
     writeSession("Ejecting SD.");
@@ -161,12 +158,6 @@ int SD::eject() {
 } // Attempt to eject attached SD card
 
 int SD::forceeject() {
-
-  if(error(FILEresult, &dataMessage));
-
-  if(idOpen) closeIDFile();
-
-  if(error(FILEresult, &idMessage));
 
   if(sessionOpen) {
     writeSession("Ejecting SD with the Force.");
@@ -273,14 +264,14 @@ int SD::write() {
 
 int SD::writesuccess() {
   rgb.load();
-  rgb.tmpGreen(100);
+  rgb.tmpGreen(400);
   writing = false;
   return true;
 } // Successfully write to file.
 
 int SD::writefail() {
   rgb.load();
-  rgb.tmpRed(100);
+  rgb.tmpRed(400);
   return false;
 } // Failed to write.
 
@@ -358,7 +349,7 @@ String SD::getPrettyTimestamp(String ts) {
   prettyts.concat("s");
   prettyts.concat(ts.substring(12,14));
 
-  return prettyts;
+  return pretty_timestamp;
 } // Return a pretty timestamp yYYYYmYMM... from YYYYMMDD...
 
 // --- Error and trouble shooting ---
@@ -468,45 +459,31 @@ int SD::writeSession(String input) {
 
 // Data ID
 
-int SD::checkIDFile() {
+int SD::writeID(unsigned int id, String datafile) {
 
-  if(idOpen) return false;
-  else if(openIDFile()) return false;
-  else {
-    idMessage = "ID is not open and couldn't open.";
-    if(sessionOpen) writeSession(idMessage);
-    return true;
-  }
+  // Open
 
-}
+  if(sdAttached) return false;
 
-int SD::openIDFile() {
-
-  if(checkSD()) return false;
-
-  if(idOpen) {
-    idMessage = "Trying to open IDFile, already open.";
-    if(sessionOpen) writeSession(idMessage);
-    return false;
-  }
-
-  FILEresult = f_open(&IDFile, "IDFILE", FA_OPEN_APPEND | FA_WRITE | FA_READ);
+  FILEresult = f_open(&IDFile, "IDFILE.txt", FA_OPEN_APPEND | FA_WRITE | FA_READ);
 
   if(error(FILEresult, &idMessage)) return false;
 
-  idOpen = true;
-
   writeSession("ID file opened.");
 
-  return true;
+  // Write
 
-}
+  if(!f_puts(String(id+","+datafile), &IDFile)) {
+    sessionMessage = "Error writing to ID...";
+    return false;
+  }
 
-int SD::closeIDFile() {
+  dataIDs[IDcount] = id;
+  dataFilenames[IDcount] = datafile;
 
-  if(checkSD()) return false;
+  IDcount++;
 
-  if(checkIDFile()) return false;
+  // Close
 
   if(sessionOpen) writeSession("Closing ID file.");
 
@@ -520,28 +497,6 @@ int SD::closeIDFile() {
 
 }
 
-int SD::writeID(unsigned int id, String datafile) {
-
-  if(checkSD()) return false;
-
-  if(checkIDFile()) return false;
-
-  if(!f_puts(String(id+","+datafile), &IDFile)) {
-    sessionMessage = "Error writing to ID...";
-    return false;
-  }
-
-  dataIDs[IDcount] = id;
-  dataFilenames[IDcount] = datafile;
-
-  IDcount++;
-
-  closeIDFile();
-
-  return true;
-
-}
-
 int SD::loadIDFile() {
   ///
 }
@@ -550,11 +505,10 @@ int SD::loadIDFile() {
 
 int SD::writeData(Data data) {
 
-  if(write()) return writefail();
+  if(!write()) return writefail();
 
-  if(!checkSD()) {
-    dataMessage = "Trying to write data, no SD attached.";
-    if(sessionOpen) writeSession(dataMessage);
+  if(!sdAttached) {
+    dataMessage = "No SD attached.";
     return writefail();
   }
 
@@ -573,7 +527,7 @@ int SD::writeData(Data data) {
 
   if(error(FILEresult, &dataMessage)) return writefail();
 
-  String dataString = String(data.id+","+timestamp+","+data.data);
+  String dataString = String(data.id+","+timestamp+","+data.data+"\n");
 
   // Write a new piece of data.
   if(!f_puts(dataString, &dataFile)) {
