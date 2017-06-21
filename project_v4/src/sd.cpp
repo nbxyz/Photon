@@ -15,15 +15,21 @@ SD::SD() {
 
   cli_out = "Hello, World!";
 
-  sd_status, data_status, sequence_status = "Unitialized";
+  sd_status = "Unitialized";
+  data_status = "Unitialized";
+  sequence_status = "Unitialized";
 
   module_status = "Initialized";
 
   working = true;
 
-  current_data_hour, sd_attached, started = false;
+  current_data_hour = false;
+  sd_attached = false;
+  started = false;
 
-  latest_sequence_number, start_timestamp, current_timestamp = 0;
+  latest_sequence_number = 0;
+  start_timestamp = 0;
+  current_timestamp = 0;
 
   // Session
 
@@ -37,7 +43,8 @@ SD::SD() {
     session.concat(c);
   }
 
-  session_status, session = checkFilename(session);
+  session = checkFilename(session);
+  session_status = session;
 
   // Update Time
 
@@ -56,7 +63,8 @@ SD::SD() {
 
   }
 
-  data_count, datafile_count = 0;
+  data_count = 0;
+  datafile_count = 0;
 
   /* If there's already a data or sequence file, load these into memory
 
@@ -119,7 +127,8 @@ void SD::draw() {
 int SD::start() {
   if(started) {
     rgb.tmpRed(200);
-    cli_out, module_status = "SD module not stopped.";
+    cli_out = "SD module not stopped.";
+    module_status = "SD module not stopped.";
     return false;
   }
 
@@ -135,7 +144,8 @@ int SD::stop() {
 
   if(!started) {
     rgb.tmpRed(200);
-    cli_out, module_status = "SD module not started.";
+    cli_out = "SD module not started.";
+    module_status = "SD module not started.";
     return false;
   }
 
@@ -301,7 +311,8 @@ void SD::force_eject() {
   rgb.save();
 
   write_session("SD Ejected with the Force!");
-  cli_out, sd_status = "SD Ejected with the Force!";
+  sd_status = "SD Ejected with the Force!";
+  cli_out = sd_status;
 
 }
 
@@ -376,7 +387,8 @@ int SD::write_data(reading_structure data) {
 
   if(error(file_result, &data_status)) return write_fail();
 
-  cli_out, data_status = reading;
+  data_status = reading;
+  cli_out = data_status;
 
   data_count++;
 
@@ -408,7 +420,8 @@ int SD::write_session(String message) {
 
   // Write a new piece of data.
   if(!f_puts(message, &sessionfile)) {
-    cli_out, session_status = "Couldn't write to data file.";
+    session_status = "Couldn't write to data file.";
+    cli_out = session_status;
     return false;
   }
 
@@ -417,7 +430,8 @@ int SD::write_session(String message) {
 
   if(error(file_result, &session_status)) return false;
 
-  cli_out, session_status = message;
+  session_status = message;
+  cli_out = message;
 
   return true;
 }
@@ -460,7 +474,8 @@ void SD::new_datafile(unsigned long end_sequence, unsigned long begin_sequence) 
 
   write_session("Starting new data hour!");
 
-  cli_out, sequence_status = completeSequence;
+  sequence_status = completeSequence;
+  cli_out = completeSequence;
 
 }
 void SD::load_file_sequences() {
@@ -475,9 +490,11 @@ void SD::load_file_sequences() {
 
   char buffer[256];
 
-  unsigned long begin, end;
+  unsigned long begin;
+  unsigned long end;
   String filename;
-  int count, comma;
+  int count;
+  int comma;
 
   while(!f_eof(&sequencefile)) {
 
@@ -686,6 +703,9 @@ int SD::session_update() {
 }
 int SD::module_update() {
   if(started) cli_out, module_status = "Running.";
-  else cli_out, module_status = "Not running.";
+  else {
+    module_status = "Not running.";
+    cli_out = module_status;
+  }
   return true;
 }
