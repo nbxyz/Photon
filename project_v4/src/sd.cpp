@@ -84,7 +84,7 @@ int SD::setup(int _SD_CS, int redPin, int greenPin, int bluePin, int _btn) {
 
   rgb.setup(redPin,greenPin,bluePin,DIGITAL);
 
-  rgb.blue();
+  rgb.yellow();
   rgb.save();
   rgb.tmpBlue(1000);
 
@@ -149,8 +149,10 @@ int SD::stop() {
     return false;
   }
 
-  rgb.yellow();
+  if(sd_attached) rgb.green();
+  else rgb.yellow();
   rgb.save();
+
   started = false;
 
   return true;
@@ -235,8 +237,6 @@ int SD::cli_in(String command) {
 
 int SD::attach() {
 
-  if(!start_try()) return false;
-
   if(!work_try()) return false;
 
   if(sd_attached) {
@@ -255,9 +255,9 @@ int SD::attach() {
 
   cli_out, sd_status = "SD Attached!";
 
-  write_session("SD Attached!");
-
   sd_attached = true;
+
+  write_session("SD Attached!");
 
   rgb.cyan(); // Set cyan as an indication of attached SD card.
   rgb.save();
@@ -266,8 +266,6 @@ int SD::attach() {
 
 }
 int SD::eject() {
-
-  if(!start_try()) return false;
 
   if(!work_try()) return false;
 
@@ -289,7 +287,6 @@ int SD::eject() {
   rgb.purple();
   rgb.save();
 
-  write_session("SD Ejected!");
   cli_out, sd_status = "SD Ejected!";
 
   return work_success();
@@ -310,7 +307,6 @@ void SD::force_eject() {
   rgb.purple();
   rgb.save();
 
-  write_session("SD Ejected with the Force!");
   sd_status = "SD Ejected with the Force!";
   cli_out = sd_status;
 
