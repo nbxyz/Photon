@@ -94,6 +94,8 @@ int SD::setup(int _SD_CS, int redPin, int greenPin, int bluePin, int _btn) {
   module_status = "Setup Done!";
   sd_status = "Initialized";
 
+  start();
+
   return work_success();
 
 }
