@@ -153,6 +153,7 @@ int SD::start_try() {
     return false;
   }
 }
+
 int SD::cli_in(String command) {
 
   rgb.tmpBlue(200);
@@ -351,6 +352,8 @@ int SD::write_data(reading_structure data) {
     current_data_hour = current_time[3];
     //new_datafile(latest_sequence_number, data.sequence_number); // Not tested yet.
 
+    data_count = 0;
+
   }
 
   latest_sequence_number = data.sequence_number;
@@ -372,6 +375,8 @@ int SD::write_data(reading_structure data) {
   if(error(file_result, &data_status)) return write_fail();
 
   cli_out, data_status = reading;
+
+  data_count++;
 
   return write_success();
 
