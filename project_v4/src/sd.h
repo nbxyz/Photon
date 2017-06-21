@@ -25,36 +25,45 @@ public:
   void force_eject();
 
   int write_data(reading_structure data);
-  reading_structure getData(unsigned int sequence_number);
+
+  //reading_structure getData(unsigned int sequence_number); // Experimental
 
   int write_session(String message);
 
 private:
 
+  // RGB
   RGBled rgb;
 
-  int SD_CS, red, blue, green, btn;
+  // SD
+  int SD_CS;
+  FatFsSD FatSD;
+  // A3, A4, A5
 
+  // Flags
   bool started, working, sd_attached, writing;
 
+  // Command line interface in
   int cli_in(String command);
+  String cli_out;
 
+  // Session started try
   int start_try();
 
+  // Working
   int work_try();
   int work_success();
   int work_fail();
 
+  // Writing
   int write_try();
   int write_fail();
   int write_success();
 
-  //RGB rgb;
+  // Reading Structure
+  String reading, count_String, sequence_number_String, now_String, is_send_String;
 
-  String reading, cli_out;
-
-  String count_String, sequence_number_String, now_String, is_send_String;
-
+  // Updates and status
   int sd_update();
   int sequence_update();
   int data_update();
@@ -63,15 +72,21 @@ private:
 
   String module_status, session_status, sd_status, data_status, sequence_status;
 
-  unsigned long latest_sequence_number, start_timestamp, current_timestamp;
+  // Sequence and epoch timestamps
+  unsigned long latest_sequence_number, sequence_begin, start_timestamp, current_timestamp;
 
-  void load_file_sequences(); // Reload the SEQUENCE file
-  unsigned long datafile_sequence_number[256][2]; // Sequence_number [begin][end];
-  String datafile_names[256];
-  int datacount_infile[256];
-  int datafile_count;
-  int data_count;
+  /* Experimetal and development
 
+  //void load_file_sequences(); // Reload the SEQUENCE file
+  //unsigned long datafile_sequence_number[256][2]; // Sequence_number [begin][end];
+  //String datafile_names[256];
+  //int datacount_infile[256];
+
+  */
+  int datafile_count; // Count of datafiles since session start
+  int data_count; // Count of readings since session start
+
+  // Timestamp
   String timestamp_string, start_timestamp_string, pretty_timestamp;
   void update_time();
   String pretty_time(String ts);
@@ -80,12 +95,14 @@ private:
   int current_time[6];
   // Year, Month, Day, Hour, Minute, Second
 
+  // Files and filenames
   String datafilename, session;
   FIL datafile, sessionfile, sequencefile;
-  FatFsSD FatSD;
   String checkFilename(String filename);
-  void new_datafile(unsigned long end_sequence, unsigned long begin_sequence);
 
+  //void new_datafile(unsigned long end_sequence, unsigned long begin_sequence); // Experimental
+
+  // File and sd error
   int error(FRESULT result, String *output);
   FRESULT sd_result, file_result;
 

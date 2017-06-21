@@ -3,19 +3,18 @@
 #include "sd.h"
 #include "data.h"
 
+// Constructer
 SD::SD() {
 
   // Starting SD Module
 
-  Particle.variable("sd_reading", reading);
+  Particle.variable("sd_reading", reading); // Latest reading
+  Particle.variable("sd_cli_out", cli_out); // Command line interface out
+  Particle.function("sd_cli_in", &SD::cli_in, this); // Command line interface in
 
-  Particle.variable("sd_cli_out", cli_out);
+  cli_out = "Hello, World!"; // AI
 
-  Particle.function("sd_cli_in", &SD::cli_in, this);
-
-  cli_out = "Hello, World!";
-
-  sd_status = "Unitialized";
+  sd_status = "Unitialized"; // Set all to unitialized for debugging
   data_status = "Unitialized";
   sequence_status = "Unitialized";
 
@@ -23,38 +22,43 @@ SD::SD() {
 
   working = true;
 
-  current_data_hour = false;
+  current_data_hour = false; // Set all the false or zero
   sd_attached = false;
   started = false;
 
+  sequence_begin = false;
   latest_sequence_number = 0;
   start_timestamp = 0;
   current_timestamp = 0;
+  datafile_count = 0;
+  data_count = 0;
 
   // Session
 
-  randomSeed(analogRead(A0));
+  randomSeed(analogRead(A0)); // Generate new random seed from analog read
 
-  session = String("S");
+  session = String("S"); // Start the session ID with 'S'
 
-  for(int i = 0; i < 7; i++) {
+  for(int i = 0; i < 7; i++) { // Generate 7 random characters to the session ID
     char c = random(97,123); // Lowercase
     //char c = random(65,91); // Uppercase
     session.concat(c);
   }
 
-  session = checkFilename(session);
+  session = checkFilename(session); // Secure the filename
   session_status = session;
 
   // Update Time
 
-  update_time();
+  update_time(); // Get the time of start
 
   start_timestamp_string = timestamp_string;
 
   // Sequence Number Location
 
-  for(int i = 0; i < 256; i++) {
+  /*
+
+  for(int i = 0; i < 256; i++) { // Experimental, initialize datafile sequence searching
 
     datafile_sequence_number[i][0] = 0;
     datafile_sequence_number[i][1] = 0;
@@ -63,8 +67,10 @@ SD::SD() {
 
   }
 
-  data_count = 0;
-  datafile_count = 0;
+  */
+
+  data_count = 0; // This session data count
+  datafile_count = 0; // Not used
 
   /* If there's already a data or sequence file, load these into memory
 
@@ -78,26 +84,27 @@ SD::SD() {
 
 }
 
+// Setup, Update and Draw
 int SD::setup(int _SD_CS, int redPin, int greenPin, int bluePin, int _btn) {
 
   // Setup RGB
 
   rgb.setup(redPin,greenPin,bluePin,DIGITAL);
 
-  rgb.yellow();
+  rgb.yellow(); // Not started, no SD.
   rgb.save();
-  rgb.tmpBlue(1000);
+  rgb.tmpBlue(1000); // Blue means working
 
   if(!work_try()) return false;
 
+  // Setup SD inputs and clock
   SD_CS = _SD_CS;
   FatSD.begin(SPI,SD_CS);
   FatSD.highSpeedClock(50000000);
   digitalWrite(SD_CS,LOW); // No card attached yet.
 
+  // Succesfully setup
   rgb.tmpGreen(500);
-  rgb.yellow();
-  rgb.save();
 
   module_status = "Setup Done!";
   sd_status = "Initialized";
@@ -107,15 +114,13 @@ int SD::setup(int _SD_CS, int redPin, int greenPin, int bluePin, int _btn) {
   return work_success();
 
 }
-
 void SD::update() {
 
-  // Update;
+  // Update
 
-  update_time();
+  // update_time();
 
 }
-
 void SD::draw() {
 
   // Draw
@@ -124,32 +129,38 @@ void SD::draw() {
 
 }
 
+// Session start try, start and stop
 int SD::start() {
-  if(started) {
+
+  if(started) { // Test for started.
     rgb.tmpRed(200);
     cli_out = "SD module not stopped.";
     module_status = "SD module not stopped.";
     return false;
   }
 
-  if(sd_attached) rgb.cyan();
+  if(sd_attached) rgb.cyan(); // Test for sd attached.
   else rgb.purple();
 
   rgb.save();
   started = true;
+  sequence_begin = false;
+  data_count = 0;
+  datafile_count = 0;
 
   return true;
+
 }
 int SD::stop() {
 
-  if(!started) {
+  if(!started) { // Test for started.
     rgb.tmpRed(200);
     cli_out = "SD module not started.";
     module_status = "SD module not started.";
     return false;
   }
 
-  if(sd_attached) rgb.green();
+  if(sd_attached) rgb.green(); // Test for sd attached.
   else rgb.yellow();
   rgb.save();
 
@@ -158,6 +169,7 @@ int SD::stop() {
   return true;
 }
 int SD::start_try() {
+
   if(started) {
     rgb.tmpBlue(200);
     return true;
@@ -166,6 +178,7 @@ int SD::start_try() {
     rgb.tmpRed(200);
     return false;
   }
+
 }
 
 int SD::cli_in(String command) {
@@ -259,7 +272,9 @@ int SD::attach() {
 
   write_session("SD Attached!");
 
-  rgb.cyan(); // Set cyan as an indication of attached SD card.
+  if(started) rgb.cyan(); // Set cyan as an indication of attached SD card.
+  else rgb.green();
+
   rgb.save();
 
   return work_success();
@@ -284,7 +299,8 @@ int SD::eject() {
 
   sd_attached = false;
 
-  rgb.purple();
+  if(started) rgb.purple();
+  else rgb.yellow();
   rgb.save();
 
   cli_out, sd_status = "SD Ejected!";
@@ -343,6 +359,8 @@ int SD::write_data(reading_structure data) {
     writing = true;
   }
 
+  if(!sequence_begin) sequence_begin = data.sequence_number;
+
   count_String = String(data.count);
   sequence_number_String = String(data.sequence_number);
   now_String = String(data.timestamp,3); // 3 decimals
@@ -354,7 +372,7 @@ int SD::write_data(reading_structure data) {
 
   update_time();
 
-  if(current_data_hour != current_time[3]) {
+  if(current_data_hour != current_time[3]) { // New hour, new datafile
 
     datafilename = String("D"+timestamp_string.substring(3,10));
     datafilename = checkFilename(datafilename);
@@ -362,6 +380,7 @@ int SD::write_data(reading_structure data) {
     //new_datafile(latest_sequence_number, data.sequence_number); // Not tested yet.
 
     data_count = 0;
+    datafile_count++;
 
   }
 
@@ -370,19 +389,23 @@ int SD::write_data(reading_structure data) {
   // Open datafile
   file_result = f_open(&datafile, datafilename+".txt", FA_OPEN_APPEND | FA_WRITE | FA_READ);
 
+  // Check for errors
   if(error(file_result, &data_status)) return write_fail();
 
   // Write a new piece of data.
   if(!f_puts(reading, &datafile)) {
-    cli_out, data_status = "Couldn't write to data file.";
+    data_status = "Couldn't write to data file.";
+    cli_out = data_status;
     return write_fail();
   }
 
   // Close datafile
   file_result = f_close(&datafile);
 
+  // Check for errors
   if(error(file_result, &data_status)) return write_fail();
 
+  // All succesful!
   data_status = reading;
   cli_out = data_status;
 
@@ -432,7 +455,7 @@ int SD::write_session(String message) {
   return true;
 }
 
-// Experimental Functions with keeping sequence searching.
+/* Experimental functions with keeping sequence searching, needs more work before implementation
 void SD::new_datafile(unsigned long end_sequence, unsigned long begin_sequence) {
 
   // Not tested, experimental.
@@ -536,6 +559,7 @@ void SD::load_file_sequences() {
   }
 
 }
+*/
 
 String SD::checkFilename(String filename) {
 
@@ -553,6 +577,7 @@ String SD::checkFilename(String filename) {
 
 }
 
+// Work try, success and fail
 int SD::work_try() {
 
   rgb.save();
@@ -565,6 +590,7 @@ int SD::work_try() {
     working = true;
   }
   return true;
+
 }
 int SD::work_success() {
 
@@ -583,6 +609,7 @@ int SD::work_fail() {
   return false;
 }
 
+// Write try, success and fail
 int SD::write_try() {
 
   rgb.save();
@@ -604,7 +631,6 @@ int SD::write_success() {
   return true;
 
 }
-
 int SD::write_fail() {
 
   rgb.load();
@@ -614,6 +640,7 @@ int SD::write_fail() {
 
 }
 
+// Timestamp
 void SD::update_time() {
 
   // Get new time
@@ -665,6 +692,7 @@ String SD::pretty_time(String pts) {
 
 }
 
+// Updates
 int SD::sd_update() {
 
   if(sd_attached) {
@@ -678,9 +706,7 @@ int SD::sd_update() {
 }
 int SD::sequence_update() {
 
-  // Experimental, not completed.
-
-  String begin = String(datafile_sequence_number[datafile_count][0]);
+  String begin = String(sequence_begin);
   String latest = String(latest_sequence_number);
   String count = String(data_count);
 
