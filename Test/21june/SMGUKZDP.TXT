@@ -1,0 +1,7 @@
+y2017m06d16h22m38s40 Hello!
+y2017m06d16h22m38s40 Attached SD card.
+y2017m06d16h22m38s42 Opening new data file.
+y2017m06d16h22m38s42 ID file opened.
+y2017m06d16h22m38s42 Closing ID file.
+y2017m06d16h22m38s56 Ejecting SD.
+y2017m06d16h22m38s56 Goodbye!

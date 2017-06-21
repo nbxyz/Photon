@@ -1,0 +1,29 @@
+y2017m06d16h22m34s18 Hello!
+y2017m06d16h22m34s18 Attached SD card.
+y2017m06d16h22m34s18 Trying to write data, no SD attached.
+y2017m06d16h22m34s21 Trying to write data, no SD attached.
+y2017m06d16h22m34s25 Trying to write data, no SD attached.
+y2017m06d16h22m34s29 Trying to write data, no SD attached.
+y2017m06d16h22m34s33 Trying to write data, no SD attached.
+y2017m06d16h22m34s37 Trying to write data, no SD attached.
+y2017m06d16h22m34s41 Trying to write data, no SD attached.
+y2017m06d16h22m34s45 Trying to write data, no SD attached.
+y2017m06d16h22m34s49 Trying to write data, no SD attached.
+y2017m06d16h22m34s53 Trying to write data, no SD attached.
+y2017m06d16h22m34s57 Trying to write data, no SD attached.
+y2017m06d16h22m35s01 Trying to write data, no SD attached.
+y2017m06d16h22m35s05 Trying to write data, no SD attached.
+y2017m06d16h22m35s09 Trying to write data, no SD attached.
+y2017m06d16h22m35s13 Trying to write data, no SD attached.
+y2017m06d16h22m35s17 Trying to write data, no SD attached.
+y2017m06d16h22m35s21 Trying to write data, no SD attached.
+y2017m06d16h22m35s25 Trying to write data, no SD attached.
+y2017m06d16h22m35s29 Trying to write data, no SD attached.
+y2017m06d16h22m35s33 Trying to write data, no SD attached.
+y2017m06d16h22m35s37 Trying to write data, no SD attached.
+y2017m06d16h22m35s41 Trying to write data, no SD attached.
+y2017m06d16h22m35s45 Trying to write data, no SD attached.
+y2017m06d16h22m35s49 Trying to write data, no SD attached.
+y2017m06d16h22m35s53 Trying to write data, no SD attached.
+y2017m06d16h22m35s56 Ejecting SD.
+y2017m06d16h22m35s56 Goodbye!

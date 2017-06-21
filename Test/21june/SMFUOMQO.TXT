@@ -1,0 +1,2 @@
+y2017m06d21h07m44s21 Finishing hourly datafile: 0,0,,0
+y2017m06d21h07m44s22 Starting new data hour!
