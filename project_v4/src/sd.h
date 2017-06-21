@@ -55,11 +55,11 @@ private:
 
   String count_String, sequence_number_String, now_String, is_send_String;
 
-  void sd_update();
-  void sequence_update();
-  void data_update();
-  void session_update();
-  void module_update();
+  int sd_update();
+  int sequence_update();
+  int data_update();
+  int session_update();
+  int module_update();
 
   String module_status, session_status, sd_status, data_status, sequence_status;
 
@@ -71,7 +71,6 @@ private:
   int datacount_infile[256];
   int datafile_count;
   int data_count;
-
 
   String timestamp_string, start_timestamp_string, pretty_timestamp;
   void update_time();

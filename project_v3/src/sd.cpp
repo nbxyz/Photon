@@ -350,6 +350,7 @@ String SD::getPrettyTimestamp(String ts) {
   prettyts.concat(ts.substring(12,14));
 
   return pretty_timestamp;
+
 } // Return a pretty timestamp yYYYYmYMM... from YYYYMMDD...
 
 // --- Error and trouble shooting ---

@@ -53,7 +53,7 @@ void loop() {
     data.timestamp = (double)Time.now() + (double)(millis()) / 1000;
     data.is_send = false;
 
-    //sd.write_data(data);
+     sd.write_data(data);
 
     sequence++;
 

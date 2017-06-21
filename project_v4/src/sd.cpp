@@ -11,9 +11,13 @@ SD::SD() {
 
   Particle.variable("sd_cli_out", cli_out);
 
-  //Particle.function("sd_cli_in", &SD::cli_in, this);
+  Particle.function("sd_cli_in", &SD::cli_in, this);
 
   cli_out = "Hello, World!";
+
+  sd_status, data_status, sequence_status = "Unitialized";
+
+  module_status = "Initialized";
 
   working = true;
 
@@ -33,11 +37,12 @@ SD::SD() {
     session.concat(c);
   }
 
-  session = checkFilename(session);
+  session_status, session = checkFilename(session);
 
   // Update Time
 
   update_time();
+
   start_timestamp_string = timestamp_string;
 
   // Sequence Number Location
@@ -75,60 +80,78 @@ int SD::setup(int _SD_CS, int redPin, int greenPin, int bluePin, int _btn) {
   rgb.save();
   rgb.tmpBlue(1000);
 
-  // Try to attach SD
+  if(!work_try()) return false;
 
-  if(work_try()) return false;
-
-    SD_CS = _SD_CS;
-    FatSD.begin(SPI,SD_CS);
-    FatSD.highSpeedClock(50000000);
-    digitalWrite(SD_CS,LOW); // No card attached yet.
+  SD_CS = _SD_CS;
+  FatSD.begin(SPI,SD_CS);
+  FatSD.highSpeedClock(50000000);
+  digitalWrite(SD_CS,LOW); // No card attached yet.
 
   rgb.tmpGreen(500);
   rgb.yellow();
   rgb.save();
+
+  module_status = "Setup Done!";
+  sd_status = "Initialized";
 
   return work_success();
 
 }
 
 void SD::update() {
+
   // Update;
 
   update_time();
+
 }
 
 void SD::draw() {
+
   // Draw
 
+  rgb.display();
 
 }
 
 int SD::start() {
   if(started) {
+    rgb.tmpRed(200);
     cli_out, module_status = "SD module not stopped.";
     return false;
   }
-  if(sd_attached) {
-    rgb.cyan();
-  } rgb.purple();
+
+  if(sd_attached) rgb.cyan();
+  else rgb.purple();
+
   rgb.save();
   started = true;
+
   return true;
 }
 int SD::stop() {
+
   if(!started) {
+    rgb.tmpRed(200);
     cli_out, module_status = "SD module not started.";
     return false;
   }
+
   rgb.yellow();
   rgb.save();
   started = false;
+
   return true;
 }
 int SD::start_try() {
-  if(started) return true;
-  else return false;
+  if(started) {
+    rgb.tmpBlue(200);
+    return true;
+  }
+  else {
+    rgb.tmpRed(200);
+    return false;
+  }
 }
 int SD::cli_in(String command) {
 
@@ -164,6 +187,13 @@ int SD::cli_in(String command) {
     }
     return true;
   }
+  else if(command == "update") {
+    if (parameter == "module") return module_update();
+    else if(parameter == "sd") return sd_update();
+    else if(parameter == "data") return data_update();
+    else if(parameter == "session") return session_update();
+    else if(parameter == "sequence") return sequence_update();
+  }
   else if(command == "attach") return attach();
   else if(command == "eject") return eject();
   else if(command == "forceeject") {
@@ -183,7 +213,7 @@ int SD::cli_in(String command) {
     return true;
 
   }
-  else if(command == "writesession") write_session(parameter);
+  else if(command == "writesession") return write_session(parameter);
   else cli_out = "Didn't understand command.";
 
   return false;
@@ -211,14 +241,13 @@ int SD::attach() {
   }
 
   cli_out, sd_status = "SD Attached!";
+
   write_session("SD Attached!");
 
   sd_attached = true;
 
-  //rgb.cyan(); // Set cyan as an indication of attached SD card.
-  //rgb.save();
-
-  sd_attached = true;
+  rgb.cyan(); // Set cyan as an indication of attached SD card.
+  rgb.save();
 
   return work_success();
 
@@ -244,8 +273,8 @@ int SD::eject() {
 
   sd_attached = false;
 
-  //rgb.yellow();
-  //rgb.save();
+  rgb.purple();
+  rgb.save();
 
   write_session("SD Ejected!");
   cli_out, sd_status = "SD Ejected!";
@@ -259,14 +288,14 @@ void SD::force_eject() {
 
   FatFs::detach(0);
 
-  if(error(sd_result,&sd_status));
+  error(sd_result,&sd_status);
 
   digitalWrite(SD_CS, LOW);
 
   sd_attached = false;
 
-  //rgb.yellow();
-  //rgb.save();
+  rgb.purple();
+  rgb.save();
 
   write_session("SD Ejected with the Force!");
   cli_out, sd_status = "SD Ejected with the Force!";
@@ -309,7 +338,7 @@ int SD::write_data(reading_structure data) {
   now_String = String(data.timestamp,3); // 3 decimals
   is_send_String = String(data.is_send);
 
-  reading = String(sequence_number_String+","+now_String+","+is_send_String+","+count_String);
+  reading = String(sequence_number_String+","+now_String+","+is_send_String+","+count_String+"\n");
 
   // Write to SD card
 
@@ -320,7 +349,7 @@ int SD::write_data(reading_structure data) {
     datafilename = String("D"+timestamp_string.substring(3,10));
     datafilename = checkFilename(datafilename);
     current_data_hour = current_time[3];
-    new_datafile(latest_sequence_number, data.sequence_number);
+    //new_datafile(latest_sequence_number, data.sequence_number); // Not tested yet.
 
   }
 
@@ -342,6 +371,8 @@ int SD::write_data(reading_structure data) {
 
   if(error(file_result, &data_status)) return write_fail();
 
+  cli_out, data_status = reading;
+
   return write_success();
 
 }
@@ -354,19 +385,19 @@ int SD::write_session(String message) {
       cli_out, data_status = "No SD attached.";
       return false;
     }
-    writing = false;
+    writing = true;
   }
 
   // Write to SD card
 
   update_time();
 
-  message = String(pretty_timestamp+" "+message);
+  message = String(pretty_timestamp+" "+message+"\n");
 
   // Open datafile
   file_result = f_open(&sessionfile, session+".txt", FA_OPEN_APPEND | FA_WRITE | FA_READ);
 
-  if(error(file_result, &session_status)) return write_fail();
+  if(error(file_result, &session_status)) return false;
 
   // Write a new piece of data.
   if(!f_puts(message, &sessionfile)) {
@@ -379,9 +410,15 @@ int SD::write_session(String message) {
 
   if(error(file_result, &session_status)) return false;
 
+  cli_out, session_status = message;
+
   return true;
 }
+
+// Experimental Functions with keeping sequence searching.
 void SD::new_datafile(unsigned long end_sequence, unsigned long begin_sequence) {
+
+  // Not tested, experimental.
 
   // Finish current sequence information
   datafile_sequence_number[datafile_count][1] = end_sequence;
@@ -415,6 +452,8 @@ void SD::new_datafile(unsigned long end_sequence, unsigned long begin_sequence) 
   datafile_names[datafile_count] = datafilename;
 
   write_session("Starting new data hour!");
+
+  cli_out, sequence_status = completeSequence;
 
 }
 void SD::load_file_sequences() {
@@ -540,17 +579,16 @@ int SD::write_try() {
 int SD::write_success() {
 
   rgb.load();
-  rgb.tmpRed(500);
-
+  rgb.tmpGreen(500);
   writing = false;
   return true;
 
 }
+
 int SD::write_fail() {
 
   rgb.load();
-  rgb.tmpGreen(500);
-
+  rgb.tmpRed(500);
   writing = false;
   return false;
 
@@ -581,33 +619,33 @@ void SD::update_time() {
   pretty_timestamp = pretty_time(timestamp);
 
 }
-String SD::pretty_time(String ts) {
+String SD::pretty_time(String pts) {
 
   String result = "";
 
   result.concat("y");
-  result.concat(ts.substring(0,4));
+  result.concat(pts.substring(0,4));
 
   result.concat("m");
-  result.concat(ts.substring(4,6));
+  result.concat(pts.substring(4,6));
 
   result.concat("d");
-  result.concat(ts.substring(6,8));
+  result.concat(pts.substring(6,8));
 
   result.concat("h");
-  result.concat(ts.substring(8,10));
+  result.concat(pts.substring(8,10));
 
   result.concat("m");
-  result.concat(ts.substring(10,12));
+  result.concat(pts.substring(10,12));
 
   result.concat("s");
-  result.concat(ts.substring(12,14));
+  result.concat(pts.substring(12,14));
 
   return result;
 
 }
 
-void SD::sd_update() {
+int SD::sd_update() {
 
   if(sd_attached) {
     cli_out, sd_status = "SD is attached.";
@@ -615,8 +653,12 @@ void SD::sd_update() {
     cli_out, sd_status = "No SD attached.";
   }
 
+  return true;
+
 }
-void SD::sequence_update() {
+int SD::sequence_update() {
+
+  // Experimental, not completed.
 
   String begin = String(datafile_sequence_number[datafile_count][0]);
   String latest = String(latest_sequence_number);
@@ -624,14 +666,19 @@ void SD::sequence_update() {
 
   cli_out, sequence_status = String("File: "+datafilename+". Count: "+count+". Begin Seq: "+begin+". Latest: "+latest );
 
+  return true;
+
 }
-void SD::data_update() {
+int SD::data_update() {
   cli_out, data_status = String("Latest reading: "+reading);
+  return true;
 }
-void SD::session_update() {
+int SD::session_update() {
   cli_out, session_status = session;
+  return true;
 }
-void SD::module_update() {
+int SD::module_update() {
   if(started) cli_out, module_status = "Running.";
   else cli_out, module_status = "Not running.";
+  return true;
 }
