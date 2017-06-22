@@ -134,15 +134,14 @@ int SD::start() {
 
   if(started) { // Test for started.
     rgb.tmpRed(200);
-    cli_out = "SD module not stopped.";
     module_status = "SD module not stopped.";
     return false;
   }
 
   if(sd_attached) rgb.cyan(); // Test for sd attached.
   else rgb.purple();
-
   rgb.save();
+
   started = true;
   sequence_begin = false;
   data_count = 0;
@@ -155,7 +154,6 @@ int SD::stop() {
 
   if(!started) { // Test for started.
     rgb.tmpRed(200);
-    cli_out = "SD module not started.";
     module_status = "SD module not started.";
     return false;
   }
@@ -266,7 +264,7 @@ int SD::attach() {
     return work_fail();
   }
 
-  cli_out, sd_status = "SD Attached!";
+  sd_status = "SD Attached!";
 
   sd_attached = true;
 
@@ -282,7 +280,9 @@ int SD::attach() {
 }
 int SD::eject() {
 
-  if(!work_try()) return false;
+  if(!work_try()) return false; // If it's writing or working you can't eject.
+
+  if(started) return work_fail(); // You have to stop before ejecting.
 
   if(!sd_attached) {
     sd_status = "No SD attached to eject.";
@@ -303,7 +303,7 @@ int SD::eject() {
   else rgb.yellow();
   rgb.save();
 
-  cli_out, sd_status = "SD Ejected!";
+  sd_status = "SD Ejected!";
 
   return work_success();
 
@@ -324,7 +324,6 @@ void SD::force_eject() {
   rgb.save();
 
   sd_status = "SD Ejected with the Force!";
-  cli_out = sd_status;
 
 }
 
@@ -333,8 +332,6 @@ int SD::error(FRESULT result, String *output) {
   if(result != FR_OK) {
 
     *output = FatFs::fileResultMessage(result);
-
-    cli_out = *output;
 
     write_session(*output);
 
@@ -353,7 +350,9 @@ int SD::write_data(reading_structure data) {
   if(!sd_attached) {
     writing = false;
     if(!attach()) {
-      cli_out, data_status = "No SD attached.";
+      rgb.purple();
+      rgb.save();
+      data_status = "No SD attached.";
       return write_fail();
     }
     writing = true;
@@ -366,7 +365,7 @@ int SD::write_data(reading_structure data) {
   now_String = String(data.timestamp,3); // 3 decimals
   is_send_String = String(data.is_send);
 
-  reading = String(sequence_number_String+","+now_String+","+is_send_String+","+count_String+"\n");
+  reading = String("Data: "+sequence_number_String+","+now_String+","+is_send_String+","+count_String+"\n");
 
   // Write to SD card
 
@@ -395,7 +394,6 @@ int SD::write_data(reading_structure data) {
   // Write a new piece of data.
   if(!f_puts(reading, &datafile)) {
     data_status = "Couldn't write to data file.";
-    cli_out = data_status;
     return write_fail();
   }
 
@@ -407,7 +405,6 @@ int SD::write_data(reading_structure data) {
 
   // All succesful!
   data_status = reading;
-  cli_out = data_status;
 
   data_count++;
 
@@ -415,12 +412,14 @@ int SD::write_data(reading_structure data) {
 
 }
 int SD::write_session(String message) {
-  if(!start_try()) return false;
 
   if(!sd_attached) {
     writing = false;
     if(!attach()) {
-      cli_out, data_status = "No SD attached.";
+      if(started) rgb.cyan();
+      else rgb.purple();
+      rgb.save();
+      data_status = "No SD attached.";
       return false;
     }
     writing = true;
@@ -440,7 +439,6 @@ int SD::write_session(String message) {
   // Write a new piece of data.
   if(!f_puts(message, &sessionfile)) {
     session_status = "Couldn't write to data file.";
-    cli_out = session_status;
     return false;
   }
 
@@ -450,7 +448,6 @@ int SD::write_session(String message) {
   if(error(file_result, &session_status)) return false;
 
   session_status = message;
-  cli_out = message;
 
   return true;
 }
@@ -567,7 +564,6 @@ String SD::checkFilename(String filename) {
 
     String file_error = String(filename+" - Filename is too long.");
     write_session(file_error);
-    cli_out = file_error;
 
     filename.remove(8); // Makes sure the filename is only 8 characters.
 
@@ -696,9 +692,9 @@ String SD::pretty_time(String pts) {
 int SD::sd_update() {
 
   if(sd_attached) {
-    cli_out, sd_status = "SD is attached.";
+    sd_status = "SD is attached.";
   } else {
-    cli_out, sd_status = "No SD attached.";
+    sd_status = "No SD attached.";
   }
 
   return true;
@@ -710,24 +706,23 @@ int SD::sequence_update() {
   String latest = String(latest_sequence_number);
   String count = String(data_count);
 
-  cli_out, sequence_status = String("File: "+datafilename+". Count: "+count+". Begin Seq: "+begin+". Latest: "+latest );
+  sequence_status = String("File: "+datafilename+". Count: "+count+". Begin Seq: "+begin+". Latest: "+latest );
 
   return true;
 
 }
 int SD::data_update() {
-  cli_out, data_status = String("Latest reading: "+reading);
+  data_status = String("Latest reading: "+reading);
   return true;
 }
 int SD::session_update() {
-  cli_out, session_status = session;
+  session_status = session;
   return true;
 }
 int SD::module_update() {
-  if(started) cli_out, module_status = "Running.";
+  if(started) module_status = "Running.";
   else {
     module_status = "Not running.";
-    cli_out = module_status;
   }
   return true;
 }

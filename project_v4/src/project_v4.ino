@@ -8,6 +8,8 @@
 #include "data.h"
 #include "sd.h"
 
+SYSTEM_MODE(SEMI_AUTOMATIC);
+
 int light;
 
 unsigned long timer;
@@ -55,7 +57,7 @@ void loop() {
 
     sd.write_data(data);
 
-    sequence++;
+    sequence = sequence + 1;
 
   }
 
