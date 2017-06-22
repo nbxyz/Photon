@@ -1,0 +1,4 @@
+y2017m06d21h20m59s41 SD Attached!
+y2017m06d21h21m06s40 (1) A hard error occurred in the low level disk I/O layer
+y2017m06d21h21m06s41 (1) A hard error occurred in the low level disk I/O layer
+y2017m06d21h21m09s28 (1) A hard error occurred in the low level disk I/O layer
