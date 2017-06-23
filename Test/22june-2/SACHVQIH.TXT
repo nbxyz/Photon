@@ -1,0 +1,6 @@
+y2017m06d22h14m13s11 Opened session.
+y2017m06d22h14m13s11 SD Attached!
+y2017m06d22h14m13s12 Opened data file: D7062214
+y2017m06d22h16m17s53 Opened session.
+y2017m06d22h16m17s54 SD Attached!
+y2017m06d22h16m17s54 Opened data file: D7062216

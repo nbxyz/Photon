@@ -1,0 +1,4 @@
+y2017m06d22h16m34s57 Opened session.
+y2017m06d22h16m34s57 SD Attached!
+y2017m06d22h16m34s57 Opened data file: D7062216
+y2017m06d22h16m49s29 Stopping.

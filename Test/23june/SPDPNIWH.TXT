@@ -1,0 +1,4 @@
+y1999m12d01h01m46s38 Opened session.
+y1999m12d01h01m47s18 SD Attached!
+y1999m12d01h01m47s43 Opened data file: D9120101
+y1999m12d01h02m00s18 Opened data file: D9120102

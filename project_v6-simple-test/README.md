@@ -1,10 +1,10 @@
-# project_v5
+# project_v6-simple-test
 
-A Particle project named project_v5
+A Particle project named project_v6-simple-test
 
 ## Welcome to your project!
 
-Every new Particle project is composed of 3 important elements that you'll see have been created in your project directory for project_v5.
+Every new Particle project is composed of 3 important elements that you'll see have been created in your project directory for project_v6-simple-test.
 
 #### ```/src``` folder:  
 This is the source folder that contains the firmware files for your project. It should *not* be renamed. 

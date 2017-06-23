@@ -1,0 +1,6 @@
+y1999m12d01h01m11s02 Opened session.
+y1999m12d01h01m11s42 SD Attached!
+y1999m12d01h01m12s02 Opened data file: D9120101
+y1999m12d01h04m25s32 Opened session.
+y1999m12d01h04m25s42 SD Attached!
+y1999m12d01h04m26s02 Opened data file: D9120104

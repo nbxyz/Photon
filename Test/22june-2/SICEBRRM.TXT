@@ -1,0 +1,5 @@
+y2017m06d22h12m49s48 Opened session.
+y2017m06d22h12m49s49 SD Attached!
+y2017m06d22h12m49s49 Opened data file: D7062212
+y2017m06d22h13m00s00 Opened data file: D7062213
+y2017m06d22h13m02s00 (1) A hard error occurred in the low level disk I/O layer
